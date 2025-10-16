@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Metrónomo Simple</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #121212;
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    input[type="number"], input[type="range"] {
+      margin: 8px;
+      padding: 5px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: none;
+      text-align: center;
+      width: 80px;
+    }
+    button {
+      margin: 4px;
+      padding: 6px 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 8px;
+      background: #00aaff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0088cc;
+    }
+    .section {
+      margin: 10px 0;
+    }
+    #toggle {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background: #00ff99;
+      color: #000;
+    }
+    #toggle:hover {
+      background: #00cc77;
+    }
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Metrónomo</h1>
+
+  <div class="section">
+    <label class="label">BPM</label>
+    <input id="bpm" type="number" value="120" min="15" max="300">
+    <input id="bpmSlider" type="range" value="120" min="15" max="300">
+  </div>
+
+  <div class="section">
+    <label class="label">Acento cada X beats</label>
+    <input id="accent" type="number" value="4" min="1" max="12">
+    <div>
+      <button class="accent-btn">1</button>
+      <button class="accent-btn">2</button>
+      <button class="accent-btn">3</button>
+      <button class="accent-btn">4</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="label">Porcentaje de beats activos</label>
+    <input id="percent" type="number" value="100" min="0" max="100">
+    <div id="percent-buttons"></div>
+  </div>
+
+  <div class="section">
+    <label class="label">Volumen</label>
+    <input id="volumeSlider" type="range" min="0" max="100" value="50">
+    <button id="muteBtn">🔇 Mute</button>
+  </div>
+
+  <button id="toggle">▶️ Play</button>
+
+  <script>
+    let audioCtx;
+    let nextBeatTime = 0;
+    let isPlaying = false;
+    let isMuted = false;
+    let count = 0;
+
+    // Parámetros dinámicos
+    let bpm = 120;
+    let accentEvery = 4;
+    let percent = 100;
+    let volume = 0.5;
+
+    // Crear botones del porcentaje 25–100 (pasos de 5)
+    const percentContainer = document.getElementById('percent-buttons');
+    for (let i = 25; i <= 100; i += 5) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      btn.className = 'percent-btn';
+      btn.addEventListener('click', () => {
+        document.getElementById('percent').value = i;
+        percent = i;
+      });
+      percentContainer.appendChild(btn);
+    }
+
+    // Sincronizar número y deslizador de BPM
+    const bpmInput = document.getElementById('bpm');
+    const bpmSlider = document.getElementById('bpmSlider');
+    bpmInput.addEventListener('input', () => {
+      bpmSlider.value = bpmInput.value;
+      bpm = parseFloat(bpmInput.value);
+    });
+    bpmSlider.addEventListener('input', () => {
+      bpmInput.value = bpmSlider.value;
+      bpm = parseFloat(bpmSlider.value);
+    });
+
+    // Botones de acento
+    document.querySelectorAll('.accent-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('accent').value = btn.textContent;
+        accentEvery = parseInt(btn.textContent);
+      });
+    });
+
+    // Cambios en inputs de acento o porcentaje
+    document.getElementById('accent').addEventListener('input', e => {
+      accentEvery = parseInt(e.target.value);
+    });
+    document.getElementById('percent').addEventListener('input', e => {
+      percent = parseFloat(e.target.value);
+    });
+
+    // Control de volumen
+    const volumeSlider = document.getElementById('volumeSlider');
+    volumeSlider.addEventListener('input', e => {
+      volume = parseFloat(e.target.value) / 100;
+    });
+
+    // Botón de mute
+    const muteBtn = document.getElementById('muteBtn');
+    muteBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      muteBtn.textContent = isMuted ? '🔈 Unmute' : '🔇 Mute';
+    });
+
+    function playClick(accent = false) {
+      if (isMuted) return;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const envelope = audioCtx.createGain();
+      osc.frequency.value = accent ? 1000 : 750;
+      envelope.gain.value = volume * 0.3; // volumen base
+      osc.connect(envelope).connect(audioCtx.destination);
+      osc.start();
+      envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function scheduler() {
+      if (!audioCtx) return;
+      const secondsPerBeat = 60 / bpm;
+      while (nextBeatTime < audioCtx.currentTime + 0.1) {
+        count++;
+        if (Math.random() * 100 <= percent) {
+          const isAccent = (count - 1) % accentEvery === 0;
+          playClick(isAccent);
+        }
+        nextBeatTime += secondsPerBeat;
+      }
+      if (isPlaying) requestAnimationFrame(scheduler);
+    }
+
+    function startMetronome() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      count = 0;
+      nextBeatTime = audioCtx.currentTime;
+      isPlaying = true;
+      scheduler();
+    }
+
+    function stopMetronome() {
+      isPlaying = false;
+    }
+
+    document.getElementById('toggle').addEventListener('click', () => {
+      if (isPlaying) {
+        stopMetronome();
+        document.getElementById('toggle').textContent = '▶️ Play';
+      } else {
+        startMetronome();
+        document.getElementById('toggle').textContent = '⏸️ Stop';
+      }
+    });
+  </script>
+</body>
+</html>
