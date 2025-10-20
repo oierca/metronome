@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Metrónomo Simple</title>
+  <title>Simple Metronome</title>
   <style>
     body {
       font-family: sans-serif;
@@ -82,7 +82,7 @@
       margin-top: 8px;
     }
 
-    /* Ajustes móviles */
+    /* Mobile layout */
     @media (max-width: 600px) {
       body {
         font-size: 1em;
@@ -99,7 +99,7 @@
   </style>
 </head>
 <body>
-  <h1>Metrónomo</h1>
+  <h1>Metronome</h1>
 
   <div class="section">
     <label class="label">BPM</label>
@@ -108,7 +108,7 @@
   </div>
 
   <div class="section">
-    <label class="label">Acento cada X beats</label>
+    <label class="label">Accent every X beats</label>
     <input id="accent" type="number" value="4" min="1" max="12">
     <div class="accent-btn-group">
       <button class="accent-btn">1</button>
@@ -119,13 +119,13 @@
   </div>
 
   <div class="section">
-    <label class="label">Porcentaje de beats activos</label>
+    <label class="label">Percentage of active beats</label>
     <input id="percent" type="number" value="100" min="0" max="100">
     <div id="percent-buttons"></div>
   </div>
 
   <div class="section">
-    <label class="label">Volumen</label>
+    <label class="label">Volume</label>
     <input id="volumeSlider" type="range" min="0" max="100" value="80">
     <button id="muteBtn">🔇 Mute</button>
   </div>
@@ -139,13 +139,13 @@
     let isMuted = false;
     let count = 0;
 
-    // Parámetros dinámicos
+    // Dynamic parameters
     let bpm = 120;
     let accentEvery = 4;
     let percent = 100;
-    let volume = 0.8; // volumen más alto
+    let volume = 0.8;
 
-    // Crear botones de porcentaje (10 en 10)
+    // Create percent buttons (10–100 in steps of 10)
     const percentContainer = document.getElementById('percent-buttons');
     for (let i = 10; i <= 100; i += 10) {
       const btn = document.createElement('button');
@@ -158,7 +158,7 @@
       percentContainer.appendChild(btn);
     }
 
-    // Sincronizar número y deslizador de BPM
+    // Sync number and slider for BPM
     const bpmInput = document.getElementById('bpm');
     const bpmSlider = document.getElementById('bpmSlider');
     bpmInput.addEventListener('input', () => {
@@ -170,7 +170,7 @@
       bpm = parseFloat(bpmSlider.value);
     });
 
-    // Botones de acento
+    // Accent buttons
     document.querySelectorAll('.accent-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('accent').value = btn.textContent;
@@ -178,7 +178,7 @@
       });
     });
 
-    // Cambios en inputs de acento o porcentaje
+    // Inputs for accent and percentage
     document.getElementById('accent').addEventListener('input', e => {
       accentEvery = parseInt(e.target.value);
     });
@@ -186,13 +186,13 @@
       percent = parseFloat(e.target.value);
     });
 
-    // Control de volumen
+    // Volume control
     const volumeSlider = document.getElementById('volumeSlider');
     volumeSlider.addEventListener('input', e => {
       volume = parseFloat(e.target.value) / 100;
     });
 
-    // Botón de mute
+    // Mute button
     const muteBtn = document.getElementById('muteBtn');
     muteBtn.addEventListener('click', () => {
       isMuted = !isMuted;
@@ -205,13 +205,10 @@
       const osc = audioCtx.createOscillator();
       const envelope = audioCtx.createGain();
 
-      // tonos diferentes
       osc.frequency.value = accent ? 1100 : 800;
-
-      // más volumen y ataque más rápido
       envelope.gain.value = volume * 0.5;
-      osc.connect(envelope).connect(audioCtx.destination);
 
+      osc.connect(envelope).connect(audioCtx.destination);
       osc.start();
       envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
       osc.stop(audioCtx.currentTime + 0.12);
