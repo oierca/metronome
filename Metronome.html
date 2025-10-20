@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Metrónomo Simple</title>
   <style>
     body {
@@ -14,46 +15,86 @@
       align-items: center;
       justify-content: center;
       height: 100vh;
+      margin: 0;
+      padding: 10px;
     }
-    input[type="number"], input[type="range"] {
-      margin: 8px;
-      padding: 5px;
-      font-size: 1em;
-      border-radius: 6px;
-      border: none;
-      text-align: center;
-      width: 80px;
+
+    h1 {
+      font-size: 2em;
+      margin-bottom: 0.5em;
     }
-    button {
-      margin: 4px;
-      padding: 6px 10px;
-      font-size: 1em;
-      border: none;
-      border-radius: 8px;
-      background: #00aaff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0088cc;
-    }
+
     .section {
-      margin: 10px 0;
+      margin: 12px 0;
     }
-    #toggle {
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 1.2em;
-      background: #00ff99;
-      color: #000;
-    }
-    #toggle:hover {
-      background: #00cc77;
-    }
+
     .label {
       display: block;
       margin-bottom: 6px;
       font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    input[type="number"], input[type="range"] {
+      margin: 8px;
+      padding: 5px;
+      font-size: 1.1em;
+      border-radius: 6px;
+      border: none;
+      text-align: center;
+      width: 100px;
+    }
+
+    button {
+      margin: 4px;
+      padding: 10px 16px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 10px;
+      background: #00aaff;
+      color: white;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: 0.15s;
+    }
+
+    button:hover, button:active {
+      background: #0088cc;
+    }
+
+    #toggle {
+      margin-top: 20px;
+      padding: 14px 28px;
+      font-size: 1.3em;
+      background: #00ff99;
+      color: #000;
+    }
+
+    #toggle:hover {
+      background: #00cc77;
+    }
+
+    #percent-buttons, .accent-btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    /* Ajustes móviles */
+    @media (max-width: 600px) {
+      body {
+        font-size: 1em;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 1em;
+      }
+      #toggle {
+        padding: 12px 24px;
+        font-size: 1.2em;
+      }
     }
   </style>
 </head>
@@ -69,7 +110,7 @@
   <div class="section">
     <label class="label">Acento cada X beats</label>
     <input id="accent" type="number" value="4" min="1" max="12">
-    <div>
+    <div class="accent-btn-group">
       <button class="accent-btn">1</button>
       <button class="accent-btn">2</button>
       <button class="accent-btn">3</button>
@@ -85,7 +126,7 @@
 
   <div class="section">
     <label class="label">Volumen</label>
-    <input id="volumeSlider" type="range" min="0" max="100" value="50">
+    <input id="volumeSlider" type="range" min="0" max="100" value="80">
     <button id="muteBtn">🔇 Mute</button>
   </div>
 
@@ -102,11 +143,11 @@
     let bpm = 120;
     let accentEvery = 4;
     let percent = 100;
-    let volume = 0.5;
+    let volume = 0.8; // volumen más alto
 
-    // Crear botones del porcentaje 25–100 (pasos de 5)
+    // Crear botones de porcentaje (10 en 10)
     const percentContainer = document.getElementById('percent-buttons');
-    for (let i = 25; i <= 100; i += 5) {
+    for (let i = 10; i <= 100; i += 10) {
       const btn = document.createElement('button');
       btn.textContent = i;
       btn.className = 'percent-btn';
@@ -163,12 +204,17 @@
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
       const envelope = audioCtx.createGain();
-      osc.frequency.value = accent ? 1000 : 750;
-      envelope.gain.value = volume * 0.3; // volumen base
+
+      // tonos diferentes
+      osc.frequency.value = accent ? 1100 : 800;
+
+      // más volumen y ataque más rápido
+      envelope.gain.value = volume * 0.5;
       osc.connect(envelope).connect(audioCtx.destination);
+
       osc.start();
-      envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-      osc.stop(audioCtx.currentTime + 0.1);
+      envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+      osc.stop(audioCtx.currentTime + 0.12);
     }
 
     function scheduler() {
